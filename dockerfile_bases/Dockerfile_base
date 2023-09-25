@@ -1,0 +1,8 @@
+FROM golang:1.21.1-bookworm
+WORKDIR /gocoderunner
+COPY ./code/* /gocoderunner
+RUN go mod init {executable}
+RUN go mod download
+RUN CGO_ENABLED=0 go build -o {executable}
+RUN chmod +x /gocoderunner/{executable}
+ENTRYPOINT [ "/gocoderunner/{executable}" ]
