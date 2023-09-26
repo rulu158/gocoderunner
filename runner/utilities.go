@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	imageBaseID = "gocoderunner"
+	imageBaseID      = "gocoderunner"
+	dockerfilePrefix = "dockerfile_"
 )
 
 func getImageName() string {
@@ -18,5 +19,5 @@ func getImageName() string {
 }
 
 func getDockerfilePath(id, folder string) string {
-	return filepath.Join(folder, fmt.Sprintf("dockerfile_%s", id))
+	return filepath.Join(folder, fmt.Sprintf("%s%s", dockerfilePrefix, id))
 }

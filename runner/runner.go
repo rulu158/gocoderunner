@@ -5,22 +5,27 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/rulu158/gocoderunner/runner/languages"
 )
 
 type Runner struct {
 	ID             string
+	Language       languages.Language
 	Context        context.Context
 	Client         *client.Client
 	DockerfilePath string
+	Code           []byte
 	Options        RunnerOptions
 }
 
-func NewRunner(opts *RunnerOptions) *Runner {
+func NewRunner(lang languages.Language, opts *RunnerOptions) *Runner {
 	r := &Runner{
-		ID:      getImageName(),
-		Context: context.Background(),
+		ID:       getImageName(),
+		Language: lang,
+		Context:  context.Background(),
 	}
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -29,36 +34,45 @@ func NewRunner(opts *RunnerOptions) *Runner {
 	}
 	r.Client = cli
 
+	r.Code = nil
+
 	r.Options = getOptions(opts)
 
-	r.DockerfilePath = getDockerfilePath(r.ID, r.Options.DockerfilesFolder)
+	r.DockerfilePath = getDockerfilePath(r.ID, DockerfilesFolder)
 
 	return r
 }
 
 type RunnerOptions struct {
-	DockerfilesFolder  string
 	DockerfileBasePath string
 	Stdin              io.Reader
 	Stdout             io.Writer
 	Stderr             io.Writer
+	Interactive        bool
+	Timeout            time.Duration
+}
+
+var (
+	DockerfilesFolder = filepath.Join(".", "dockerfiles")
+)
+
+func SetDockerfilesFolder(newDockerfilesFolder string) {
+	DockerfilesFolder = newDockerfilesFolder
 }
 
 var DefaultRunnerOptions = RunnerOptions{
-	DockerfilesFolder:  filepath.Join(".", "dockerfiles"),
 	DockerfileBasePath: filepath.Join(".", "dockerfile_bases", "Dockerfile_base"),
 	Stdin:              os.Stdin,
 	Stdout:             os.Stdout,
 	Stderr:             os.Stderr,
+	Interactive:        false,
+	Timeout:            0,
 }
 
 func getOptions(opts *RunnerOptions) RunnerOptions {
 	options := DefaultRunnerOptions
 	if opts == nil {
 		return options
-	}
-	if opts.DockerfilesFolder != "" {
-		options.DockerfilesFolder = opts.DockerfilesFolder
 	}
 	if opts.DockerfileBasePath != "" {
 		options.DockerfileBasePath = opts.DockerfileBasePath
@@ -71,6 +85,12 @@ func getOptions(opts *RunnerOptions) RunnerOptions {
 	}
 	if opts.Stderr != nil {
 		options.Stderr = opts.Stderr
+	}
+	if opts.Interactive != false {
+		options.Interactive = true
+	}
+	if opts.Timeout != 0 {
+		options.Timeout = opts.Timeout
 	}
 	return options
 }
