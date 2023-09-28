@@ -2,29 +2,29 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
-	"time"
 )
 
 const (
-	timeout = 15 * time.Second
-	debug   = false
+	debug = false
 )
 
-func (r *Runner) ExecCode() {
+func (r *Runner) ExecCode(code []byte) error {
 	defer r.FreeResources()
 
-	err := r.CreateDockerfile()
+	err := r.CreateCodeFileFromBytes(code)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return err
+	}
+
+	err = r.CreateDockerfile()
+	if err != nil {
+		return err
 	}
 
 	err = r.BuildImage()
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return err
 	}
 
 	/*
@@ -38,9 +38,10 @@ func (r *Runner) ExecCode() {
 	*/
 	err = r.InitializeContainer()
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return err
 	}
+
+	return nil
 }
 
 func (r *Runner) InitializeContainer() error {

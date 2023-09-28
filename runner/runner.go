@@ -16,6 +16,7 @@ type Runner struct {
 	Language       languages.Language
 	Context        context.Context
 	Client         *client.Client
+	CodePath       string
 	DockerfilePath string
 	Code           []byte
 	Options        RunnerOptions
@@ -38,6 +39,8 @@ func NewRunner(lang languages.Language, opts *RunnerOptions) *Runner {
 
 	r.Options = getOptions(opts)
 
+	r.CodePath = getCodePath(r.ID, CodeFolder, lang)
+
 	r.DockerfilePath = getDockerfilePath(r.ID, DockerfilesFolder)
 
 	return r
@@ -54,7 +57,12 @@ type RunnerOptions struct {
 
 var (
 	DockerfilesFolder = filepath.Join(".", "dockerfiles")
+	CodeFolder        = filepath.Join(".", "code")
 )
+
+func SetCodeFolder(newCodeFolder string) {
+	CodeFolder = newCodeFolder
+}
 
 func SetDockerfilesFolder(newDockerfilesFolder string) {
 	DockerfilesFolder = newDockerfilesFolder

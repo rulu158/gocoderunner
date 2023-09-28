@@ -40,6 +40,11 @@ func (r *Runner) FreeResources() {
 	if err != nil {
 		log.Println(errors.Join(errors.New("Error removing dockerfile "+r.DockerfilePath+":"), err))
 	}
+
+	err = os.Remove(r.CodePath)
+	if err != nil {
+		log.Println(errors.Join(errors.New("Error removing code file "+r.CodePath+":"), err))
+	}
 }
 
 func FreeAllResources() {
@@ -82,6 +87,16 @@ func FreeAllResources() {
 			err := os.Remove(filepath.Join(DockerfilesFolder, item.Name()))
 			if err != nil {
 				log.Println(errors.Join(errors.New("Error removing dockerfile "+filepath.Join(DockerfilesFolder, item.Name())+":"), err))
+			}
+		}
+	}
+
+	items, err = os.ReadDir(CodeFolder)
+	for _, item := range items {
+		if !item.IsDir() && strings.HasPrefix(item.Name(), imageBaseID) {
+			err := os.Remove(filepath.Join(CodeFolder, item.Name()))
+			if err != nil {
+				log.Println(errors.Join(errors.New("Error removing code file "+filepath.Join(CodeFolder, item.Name())+":"), err))
 			}
 		}
 	}

@@ -8,11 +8,26 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/archive"
 )
+
+func (r *Runner) CreateCodeFileFromBytes(code []byte) error {
+	err := os.MkdirAll(CodeFolder, os.ModePerm)
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("Couldn't create %s folder", CodeFolder)))
+	}
+
+	err = os.WriteFile(r.CodePath, code, 0644)
+	if err != nil {
+		return errors.New("Error writing to file")
+	}
+
+	return nil
+}
 
 func (r *Runner) CreateDockerfile() error {
 	b, err := os.ReadFile(r.Options.DockerfileBasePath)
@@ -22,9 +37,15 @@ func (r *Runner) CreateDockerfile() error {
 
 	dockerfileContents := bytes.ReplaceAll(
 		b,
-		[]byte("{executable}"),
+		[]byte("{imageName}"),
 		[]byte(r.ID),
 	)
+
+	dir := filepath.Dir(r.DockerfilePath)
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("Couldn't create %s folder", dir)))
+	}
 
 	err = os.WriteFile(r.DockerfilePath, dockerfileContents, 0644)
 	if err != nil {
