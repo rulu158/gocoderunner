@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"net/http"
 	"strings"
 	"time"
 
@@ -48,11 +48,7 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 	var codeItem CodePOST
 	if err := c.BindJSON(&codeItem); err != nil {
 		response := &Response{ID: "", Error: true, Result: "Invalid JSON."}
-		res, err := json.Marshal(response)
-		if err != nil {
-			panic(err)
-		}
-		c.Writer.Write(res)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -88,14 +84,20 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 	case <-koCh:
 		isError = true
 	case <-timerC:
-		c.Writer.Write([]byte("Error: timeout"))
+		response := &Response{ID: "", Error: true, Result: "Timeout"}
+		c.JSON(http.StatusRequestTimeout, response)
 		return
 	}
 
-	response := &Response{ID: runner.ID, Error: isError, Result: sb.String()}
-	res, err := json.Marshal(response)
-	if err != nil {
-		panic(err)
+	var id string
+	var status int
+	if isError {
+		id = ""
+		status = http.StatusInternalServerError
+	} else {
+		id = runner.ID
+		status = http.StatusOK
 	}
-	c.Writer.Write(res)
+	response := &Response{ID: id, Error: isError, Result: sb.String()}
+	c.JSON(status, response)
 }
