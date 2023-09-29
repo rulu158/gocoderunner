@@ -52,9 +52,10 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 		return
 	}
 
-	var sb strings.Builder
+	var sbStdout, sbStderr strings.Builder
 	runner := runner.NewRunner(languages.Go, &runner.RunnerOptions{
-		Stdout:  &sb,
+		Stdout:  &sbStdout,
+		Stderr:  &sbStderr,
 		Timeout: 30 * time.Second,
 	})
 
@@ -89,15 +90,17 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 		return
 	}
 
-	var id string
+	var id, result string
 	var status int
 	if isError {
 		id = ""
 		status = http.StatusInternalServerError
+		result = sbStderr.String()
 	} else {
 		id = runner.ID
 		status = http.StatusOK
+		result = sbStdout.String()
 	}
-	response := &Response{ID: id, Error: isError, Result: sb.String()}
+	response := &Response{ID: id, Error: isError, Result: result}
 	c.JSON(status, response)
 }
