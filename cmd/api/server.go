@@ -15,7 +15,7 @@ func (srv *Server) Run(port string) {
 	engine := gin.New()
 	_ = engine
 
-	engine.POST("/exec-runner", srv.ExecRunnerPOST)
+	engine.POST("/api/exec-runner", srv.ExecRunnerPOST)
 
 	engine.Run(port)
 }
