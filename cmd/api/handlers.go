@@ -46,8 +46,25 @@ func (srv *Server) ExecRunner(c *gin.Context) {
 
 func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 	var codeItem CodePOST
-	if err := c.BindJSON(&codeItem); err != nil {
-		response := &Response{ID: "", Error: true, Result: "Invalid JSON."}
+
+	if c.ContentType() == "application/json" {
+		if err := c.BindJSON(&codeItem); err != nil {
+			response := &Response{ID: "", Error: true, Result: "Invalid JSON."}
+			c.JSON(http.StatusBadRequest, response)
+			return
+		}
+	} else if c.ContentType() == "text/plain" {
+		code, err := c.GetRawData()
+		if err != nil {
+			response := &Response{ID: "", Error: true, Result: "Invalid data."}
+			c.JSON(http.StatusBadRequest, response)
+			return
+		}
+		codeItem.Code = strings.Replace(string(code[:]), "\\r\\n", "\n", -1)
+	} else if c.ContentType() == "application/x-www-form-urlencoded" {
+		//c.GetPostForm()
+	} else {
+		response := &Response{ID: "", Error: true, Result: "Invalid ContentType."}
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
