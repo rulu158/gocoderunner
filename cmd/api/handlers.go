@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rulu158/gocoderunner/runner"
+	runnerlib "github.com/rulu158/gocoderunner/runner"
 	"github.com/rulu158/gocoderunner/runner/languages"
 )
 
@@ -61,8 +62,6 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 			return
 		}
 		codeItem.Code = strings.Replace(string(code[:]), "\\r\\n", "\n", -1)
-	} else if c.ContentType() == "application/x-www-form-urlencoded" {
-		//c.GetPostForm()
 	} else {
 		response := &Response{ID: "", Error: true, Result: "Invalid ContentType."}
 		c.JSON(http.StatusBadRequest, response)
@@ -77,11 +76,11 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 	})
 
 	okCh := make(chan int, 1)
-	koCh := make(chan int, 1)
+	koCh := make(chan error, 1)
 	go func() {
 		err := runner.ExecCode([]byte(codeItem.Code))
 		if err != nil {
-			koCh <- 1
+			koCh <- err
 		} else {
 			okCh <- 1
 		}
@@ -97,10 +96,14 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 	}
 
 	isError := false
+	isServerError := false
 	select {
 	case <-okCh:
-	case <-koCh:
+	case err := <-koCh:
 		isError = true
+		if err == runnerlib.UnrecoverableError {
+			isServerError = true
+		}
 	case <-timerC:
 		response := &Response{ID: "", Error: true, Result: "Timeout"}
 		c.JSON(http.StatusRequestTimeout, response)
@@ -109,10 +112,10 @@ func (srv *Server) ExecRunnerPOST(c *gin.Context) {
 
 	var id, result string
 	var status int
-	if isError {
+	if isServerError {
 		id = ""
 		status = http.StatusInternalServerError
-		result = sbStderr.String()
+		result = sbStdout.String()
 	} else {
 		id = runner.ID
 		status = http.StatusOK

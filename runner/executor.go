@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"log"
 	"os/exec"
 )
 
@@ -9,21 +11,28 @@ const (
 	debug = false
 )
 
+var (
+	UnrecoverableError = errors.New("Server error")
+)
+
 func (r *Runner) ExecCode(code []byte) error {
 	defer r.FreeResources()
 
 	err := r.CreateCodeFileFromBytes(code)
 	if err != nil {
-		return err
+		log.Println("CREATE_CODE_FILE: " + err.Error())
+		return UnrecoverableError
 	}
 
 	err = r.CreateDockerfile()
 	if err != nil {
-		return err
+		log.Println("CREATE_DOCKERFILE: " + err.Error())
+		return UnrecoverableError
 	}
 
 	err = r.BuildImage()
 	if err != nil {
+		log.Println("BUILD_IMAGE: " + err.Error())
 		return err
 	}
 
@@ -38,7 +47,8 @@ func (r *Runner) ExecCode(code []byte) error {
 	*/
 	err = r.InitializeContainer()
 	if err != nil {
-		return err
+		log.Println("INITIALIZE_CONTAINER: " + err.Error())
+		return UnrecoverableError
 	}
 
 	return nil

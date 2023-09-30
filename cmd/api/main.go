@@ -5,12 +5,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gin-gonic/gin"
 	"github.com/rulu158/gocoderunner/runner"
 )
 
 const port = ":9920"
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+
 	handleSignals(func() { runner.FreeAllResources() })
 
 	runner.FreeAllResources()
